@@ -7,7 +7,7 @@ import matplotlib.mlab as mlab
 from scipy import signal
 
 class EEGrunt:
-    def __init__(self, path, filename, source, title = ""):
+    def __init__(self, path, filename, source, title = "", params = {}):
 
         self.path = path
         self.filename = filename
@@ -17,12 +17,12 @@ class EEGrunt:
         else:
             self.session_title = source.title()+" data loaded from "+filename
 
-
         if self.source == 'muse' or self.source == 'muse-lsl':
             self.fs_Hz = 220.0
             self.nchannels = 4
             self.channels = [1,2,3,4]
             self.col_offset = -1
+            self.delimiter = ','
 
         else: # If it isn't Muse data, it's OpenBCI data.
 
@@ -31,10 +31,28 @@ class EEGrunt:
                 self.fs_Hz = 200.0
                 self.nchannels = 4
                 self.channels = [1,2,3,4]
+                self.delimiter = ','
+            elif self.source == 'customtxt' or self.source == 'customcsv':   
+                self.fs_Hz = float(params["fs_Hz"])
+                self.cols = params["cols"]              # Columns to read from text file; must be a tuple
+                self.first_col_is_time = params["first_col_is_time"]   # Boolean - specifies whether the 1st column we read in is channel 1 or a channel
+                self.skiprows = params["skiprows"]
+                self.delimiter = params["delimiter"]    # Only applies for reading txt files
+                
+                # Set up some other values based on this
+                if self.first_col_is_time:
+                    self.col_offset = 0
+                else:
+                    self.col_offset = -1
+                    
+                self.channels = range(1, len(self.cols) - self.col_offset)
+                self.nchannels = len(self.channels)
+                
             else:
                 self.fs_Hz = 250.0
                 self.nchannels = 8
                 self.channels = [1,2,3,4,5,6,7,8]
+                self.delimiter = ','
 
         self.NFFT = 512
 
@@ -76,11 +94,26 @@ class EEGrunt:
 
             dt = np.dtype('Float64')
             raw_data = np.array(raw_data, dtype=dt)
+            
+        elif source == 'customcsv':
+            # col_offset is 0 if the first column is time (E.g. not channel 1)
+            # col_offset is -1 if the first column is channel 1
+            
+            # Warning this code is untested
+            skiprows = 0
+            
+            with open(path + filename, 'rb') as csvfile:
+                for row in csvfile:
+                    cols = row.split(',')
+                    raw_data.append(cols[:])
+
+            dt = np.dtype('Float64')
+            raw_data = np.array(raw_data, dtype=dt)
 
         else:
 
             if source == 'openbci' or source == 'openbci-openvibe':
-                skiprows = 5
+                skiprows = 6
                 cols = (0,1,2,3,4,5,6,7,8)
 
             if source == 'openbci-ganglion' or source =='openbci-ganglion-openvibe':
@@ -93,9 +126,18 @@ class EEGrunt:
             if source == 'muse-lsl':
                 skiprows = 1
                 cols = (0,1,2,3,4)
+                
+            if source == 'customtxt':
+                # col_offset is 0 if the first column is time (E.g. not channel 1)
+                # col_offset is -1 if the first column is channel 1
+                cols = self.cols
+                skiprows = self.skiprows
 
+#            print(str(skiprows))
+#            print(str(cols))
+#            cols
             raw_data = np.loadtxt(path + filename,
-                          delimiter=',',
+                          delimiter=self.delimiter,
                           skiprows=skiprows,
                           usecols=cols
                           )
@@ -115,6 +157,33 @@ class EEGrunt:
         channel_data = self.raw_data[:,(channel+self.col_offset)]
         self.channel = channel
         self.data = channel_data
+        self.t_sec = np.arange(len(self.raw_data[:, 0])) /self.fs_Hz
+        
+    def downsample(self, ds):
+        # Keeps the first data point and ever ds datapoints thereafter
+
+        N = self.raw_data.shape[0]
+        
+        samples = range(0,N,ds)
+        
+        self.data = self.data[samples]
+        
+        #self.t_sec = self.t_sec[samples]
+        # Regenerate time vector
+        self.t_sec = np.arange(len(self.data)) /self.fs_Hz
+        
+    def downsample_raw(self, ds):
+        # As with downsample, but applies instead to self.raw_data
+
+        N = self.raw_data.shape[0]
+        
+        samples = range(0,N,ds)
+        
+        self.raw_data = self.raw_data[samples,:]
+        
+        #self.t_sec = self.t_sec[samples]
+        # Regenerate time vector
+        self.t_sec = np.arange(self.raw_data.shape[0]) /self.fs_Hz
 
     def trim_data(self, start, end):
         # Trim data off the beginning and end to get rid of unwanted
@@ -134,6 +203,19 @@ class EEGrunt:
             trim_end_samples = len(self.data)
 
         self.data = self.data[trim_start_samples:trim_end_samples]
+        self.t_sec = self.t_sec[trim_start_samples:trim_end_samples]
+        
+    def trim_raw_data(self, start, end):
+        # Like trim_data, but applies it to raw_data instead of data
+
+        trim_start_samples = int(start * self.fs_Hz)
+        trim_end_samples = int(end * self.fs_Hz)*-1
+
+        if(trim_end_samples == 0):
+            trim_end_samples = self.raw_data.shape[0]
+
+        #self.data = self.data[trim_start_samples:trim_end_samples]              # Trim the data, too. Need to make sure this actually exists, though!
+        self.raw_data = self.raw_data[trim_start_samples:trim_end_samples,:]
         self.t_sec = self.t_sec[trim_start_samples:trim_end_samples]
 
 
@@ -198,7 +280,7 @@ class EEGrunt:
             print("Computation complete! Showing generated plots...")
             plt.show()
 
-    def signalplot(self):
+    def signalplot(self, namesuffix=""):
         print("Generating signal plot...")
         plt.figure(figsize=(10,5))
         plt.subplot(1,1,1)
@@ -206,7 +288,11 @@ class EEGrunt:
         plt.xlabel('Time (sec)')
         plt.ylabel('Power (uV)')
         plt.title(self.plot_title('Signal'))
-        self.plotit(plt)
+        if namesuffix:                              # IF not empty
+            self.plotit(plt, self.plot_filename('Signal_' + namesuffix))
+        else:
+            self.plotit(plt, self.plot_filename('Signal'))
+        #self.plotit(plt)
 
     def get_spectrum_data(self):
         print("Calculating spectrum data...")
@@ -220,13 +306,13 @@ class EEGrunt:
         self.spec_PSDperBin = self.spec_PSDperHz * self.fs_Hz / float(self.NFFT)
 
 
-    def spectrogram(self):
+    def spectrogram(self,myclims = [-25,26]):
         print("Generating spectrogram...")
         f_lim_Hz = [0, 50]   # frequency limits for plotting
         plt.figure(figsize=(10,5))
         ax = plt.subplot(1,1,1)
         plt.pcolor(self.spec_t, self.spec_freqs, 10*np.log10(self.spec_PSDperBin))  # dB re: 1 uV
-        plt.clim([-25,26])
+        plt.clim(myclims)
         plt.xlim(self.spec_t[0], self.spec_t[-1]+1)
         plt.ylim(f_lim_Hz)
         plt.xlabel('Time (sec)')

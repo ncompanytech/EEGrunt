@@ -1,5 +1,12 @@
 old/*
 data/*
-plots/*
 *.pyc
 *.py~
+
+*.DS_Store
+.DS_Store
+Thumbs.db
+octave-core
+
+.dropbox.attr
+*.png
