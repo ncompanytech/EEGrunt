@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.mlab as mlab
@@ -73,11 +74,13 @@ class EEGrunt:
         path = self.path
         filename = self.filename
         source = self.source
+        
+        pathfile = os.path.join(path,filename)
 
-        print("Loading EEG data: "+path+filename)
+        print("Loading EEG data: "+pathfile)
 
         try:
-            with open(path+filename) as file:
+            with open(pathfile) as file:
                 pass
         except IOError:
             print 'EEG data file not found.'
@@ -86,7 +89,7 @@ class EEGrunt:
         if source == 'muse':
             skiprows = 0
             raw_data = []
-            with open(path + filename, 'rb') as csvfile:
+            with open(pathfile, 'rb') as csvfile:
                 for row in csvfile:
                     cols = row.split(',')
                     if(cols[1].strip() == "/muse/eeg"):
@@ -102,7 +105,7 @@ class EEGrunt:
             # Warning this code is untested
             skiprows = 0
             
-            with open(path + filename, 'rb') as csvfile:
+            with open(pathfile, 'rb') as csvfile:
                 for row in csvfile:
                     cols = row.split(',')
                     raw_data.append(cols[:])
@@ -136,7 +139,7 @@ class EEGrunt:
 #            print(str(skiprows))
 #            print(str(cols))
 #            cols
-            raw_data = np.loadtxt(path + filename,
+            raw_data = np.loadtxt(pathfile,
                           delimiter=self.delimiter,
                           skiprows=skiprows,
                           usecols=cols
