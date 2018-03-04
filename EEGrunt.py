@@ -336,7 +336,13 @@ class EEGrunt:
     def plot_filename(self,title = ""):
         fn = self.session_title+' Channel '+str(self.channel)+' '+title
         valid_chars = '-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-        filename = 'plots/'+(''.join(c for c in fn if c in valid_chars)).replace(' ','_')+'.png'
+        
+        directory = 'plots'
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        
+        filename = os.path.join(directory, (''.join(c for c in fn if c in valid_chars)).replace(' ','_')+'.png')
+        
         return filename
 
 
