@@ -309,15 +309,15 @@ class EEGrunt:
         self.spec_PSDperBin = self.spec_PSDperHz * self.fs_Hz / float(self.NFFT)
 
 
-    def spectrogram(self,myclims = [-25,26]):
+    def spectrogram(self,myclims = [-25,26],ylim=[0,50]):
         print("Generating spectrogram...")
-        f_lim_Hz = [0, 50]   # frequency limits for plotting
+        #f_lim_Hz = [0, 50]   # frequency limits for plotting
         plt.figure(figsize=(10,5))
         ax = plt.subplot(1,1,1)
         plt.pcolor(self.spec_t, self.spec_freqs, 10*np.log10(self.spec_PSDperBin))  # dB re: 1 uV
         plt.clim(myclims)
         plt.xlim(self.spec_t[0], self.spec_t[-1]+1)
-        plt.ylim(f_lim_Hz)
+        plt.ylim(ylim)
         plt.xlabel('Time (sec)')
         plt.ylabel('Frequency (Hz)')
         plt.title(self.plot_title('Spectrogram'))
@@ -346,15 +346,15 @@ class EEGrunt:
         return filename
 
 
-    def plot_spectrum_avg_fft(self):
+    def plot_spectrum_avg_fft(self,xlim=(0,60),ylim=(-30,50)):
 
         print("Generating power spectrum plot")
 
         spectrum_PSDperHz = np.mean(self.spec_PSDperHz,1)
         plt.figure(figsize=(10,5))
         plt.plot(self.spec_freqs, 10*np.log10(spectrum_PSDperHz))  # dB re: 1 uV
-        plt.xlim((0,60))
-        plt.ylim((-30,50))
+        plt.xlim(xlim)
+        plt.ylim(ylim)
         plotname = 'Channel '+str(self.channel)+' Spectrum Average FFT Plot'
         plt.xlabel('Frequency (Hz)')
         plt.ylabel('PSD per Hz (dB re: 1uV^2/Hz)')
