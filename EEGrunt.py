@@ -60,8 +60,8 @@ class EEGrunt:
         self.sample_block = 11
 
         self.plot = 'save'
-
-        self.overlap  = self.NFFT - int(0.25 * self.fs_Hz)
+        
+        self.overlap_time = 0.25    # Amount of overlap time (s) for spectrogram windows (default 250 ms window overlap)
 
         self.ecg_threshold_factor = 6
         self.hrv_window_length = 10
@@ -299,11 +299,14 @@ class EEGrunt:
 
     def get_spectrum_data(self):
         print("Calculating spectrum data...")
+        
+        self.Noverlap  = self.NFFT - int(self.overlap_time * self.fs_Hz)  
+        
         self.spec_PSDperHz, self.spec_freqs, self.spec_t = mlab.specgram(np.squeeze(self.data),
                                        NFFT=self.NFFT,
                                        window=mlab.window_hanning,
                                        Fs=self.fs_Hz,
-                                       noverlap=self.overlap
+                                       noverlap=self.Noverlap
                                        ) # returns PSD power per Hz
         # convert the units of the spectral data
         self.spec_PSDperBin = self.spec_PSDperHz * self.fs_Hz / float(self.NFFT)
