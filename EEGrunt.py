@@ -83,7 +83,7 @@ class EEGrunt:
             with open(pathfile) as file:
                 pass
         except IOError:
-            print 'EEG data file not found.'
+            print ('EEG data file not found.')
             exit()
 
         if source == 'muse':
@@ -150,8 +150,8 @@ class EEGrunt:
 
         self.t_sec = np.arange(len(self.raw_data[:, 0])) /self.fs_Hz
 
-        print "Session length (seconds): "+str(len(self.t_sec)/self.fs_Hz)
-        print "t_sec last: "+str(self.t_sec[:-1])
+        print ("Session length (seconds): "+str(len(self.t_sec)/self.fs_Hz))
+        print ("t_sec last: "+str(self.t_sec[:-1]))
 
 
 
@@ -256,13 +256,13 @@ class EEGrunt:
     # Convenient smoothing function from SciPy cookbook: http://scipy-cookbook.readthedocs.io/items/SignalSmooth.html
     def smooth(self,x,window_len=11,window='hanning'):
         if x.ndim != 1:
-            raise ValueError, "Smooth only accepts 1 dimension arrays."
+            raise (ValueError, "Smooth only accepts 1 dimension arrays.")
         if x.size < window_len:
-            raise ValueError, "Input vector needs to be bigger than window size."
+            raise (ValueError, "Input vector needs to be bigger than window size.")
         if window_len<3:
             return x
         if not window in ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']:
-            raise ValueError, "Invalid window type in smooth(). Must be one of 'flat', 'hanning', 'hamming', 'bartlett', or 'blackman'"
+            raise (ValueError, "Invalid window type in smooth(). Must be one of 'flat', 'hanning', 'hamming', 'bartlett', or 'blackman'")
         s=np.r_[x[window_len-1:0:-1],x,x[-1:-window_len:-1]]
         if window == 'flat': #moving average
             w=np.ones(window_len,'d')
