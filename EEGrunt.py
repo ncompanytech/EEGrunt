@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.mlab as mlab
 from scipy import signal
+from pdb import set_trace as bp   # Python debugger
 
 class EEGrunt:
     def __init__(self, path, filename, source, title = "", params = {}):
@@ -33,7 +34,7 @@ class EEGrunt:
                 self.nchannels = 4
                 self.channels = [1,2,3,4]
                 self.delimiter = ','
-            elif self.source == 'customtxt' or self.source == 'customcsv':   
+            elif self.source == 'customtxt' or self.source == 'customcsv' or self.source == 'binary32':   
                 self.fs_Hz = float(params["fs_Hz"])
                 self.cols = params["cols"]              # Columns to read from text file; must be a tuple
                 self.first_col_is_time = params["first_col_is_time"]   # Boolean - specifies whether the 1st column we read in is channel 1 or a channel
@@ -112,7 +113,16 @@ class EEGrunt:
 
             dt = np.dtype('Float64')
             raw_data = np.array(raw_data, dtype=dt)
+            
+        elif source == 'binary32':
+            # 32-bit binary data, channels are multiplexed 
+            
+            f = open(pathfile, "r")
+            raw_data = np.fromfile(f, dtype=np.uint32)
 
+            temp = int(np.floor(raw_data.size/4))
+            raw_data = np.reshape(raw_data,[temp,4])
+            
         else:
 
             if source == 'openbci' or source == 'openbci-openvibe':
