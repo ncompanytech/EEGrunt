@@ -32,39 +32,42 @@ class EEGrunt:
             self.delimiter = ','
             self.scaling_factor = []    # Factor by which to scale EEG data after loading from file (useful for binary data)
 
-        else: # If it isn't Muse data, it's OpenBCI data or custom. Should organize this better...
 
+        elif self.source == 'openbci-ganglion' or self.source == 'openbci-ganglion-openvibe':
             self.col_offset = 0
-            if self.source == 'openbci-ganglion' or self.source == 'openbci-ganglion-openvibe':
-                self.fs_Hz = 200.0
-                self.nchannels = 4
-                self.channels = [1,2,3,4]
-                self.delimiter = ','
-                self.scaling_factor = []    # Factor by which to scale EEG data after loading from file (useful for binary data)
+            self.fs_Hz = 200.0
+            self.nchannels = 4
+            self.channels = [1,2,3,4]
+            self.delimiter = ','
+            self.scaling_factor = []    # Factor by which to scale EEG data after loading from file (useful for binary data)
+            
+        elif self.source == 'customtxt' or self.source == 'customcsv' or self.source == 'binary32':   
+            self.fs_Hz = float(params["fs_Hz"])
+            self.cols = params["cols"]              # Columns to read from text file; must be a tuple
+            self.first_col_is_time = params["first_col_is_time"]   # Boolean - specifies whether the 1st column we read in is channel 1 or a channel
+            self.skiprows = params["skiprows"]
+            self.delimiter = params["delimiter"]    # Only applies for reading txt files
+            self.scaling_factor = params["scaling_factor"]    # Factor by which to scale EEG data after loading from file (useful for binary data)
+            
+            # Set up some other values based on this
+            if self.first_col_is_time:
+                self.col_offset = 0
+            else:
+                self.col_offset = -1
                 
-            elif self.source == 'customtxt' or self.source == 'customcsv' or self.source == 'binary32':   
-                self.fs_Hz = float(params["fs_Hz"])
-                self.cols = params["cols"]              # Columns to read from text file; must be a tuple
-                self.first_col_is_time = params["first_col_is_time"]   # Boolean - specifies whether the 1st column we read in is channel 1 or a channel
-                self.skiprows = params["skiprows"]
-                self.delimiter = params["delimiter"]    # Only applies for reading txt files
-                self.scaling_factor = params["scaling_factor"]    # Factor by which to scale EEG data after loading from file (useful for binary data)
-                
-                # Set up some other values based on this
-                if self.first_col_is_time:
-                    self.col_offset = 0
-                else:
-                    self.col_offset = -1
-                    
-                self.channels = range(1, len(self.cols) - self.col_offset)
-                self.nchannels = len(self.channels)
-                
-            else:               # OpenBCI default - Cyton - fix so that have to specify 'openbci'
-                self.fs_Hz = 250.0
-                self.nchannels = 8
-                self.channels = [1,2,3,4,5,6,7,8]
-                self.delimiter = ','
-                self.scaling_factor = params["scaling_factor"] 
+            self.channels = range(1, len(self.cols) - self.col_offset)
+            self.nchannels = len(self.channels)
+            
+        elif self.source == 'openbci':               # OpenBCI default - Cyton 
+            self.col_offset = 0
+            self.fs_Hz = 250.0
+            self.nchannels = 8
+            self.channels = [1,2,3,4,5,6,7,8]
+            self.delimiter = ','
+            self.scaling_factor = params["scaling_factor"] 
+            
+        else:
+            print ('Unrecognized source')
 
         self.NFFT = 512
 
