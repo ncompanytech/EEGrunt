@@ -20,8 +20,8 @@ class EEGrunt:
             self.session_title = source.title()+" data loaded from "+filename
             
         # Set up defaults for params dictionary
-        if 'scaling_factor' not in params.keys():
-            params["scaling_factor"] = []
+        if 'scaling_to_microV' not in params.keys():
+            params["scaling_to_microV"] = []
 
         # Set up self based on data type
         if self.source == 'muse' or self.source == 'muse-lsl':
@@ -30,7 +30,7 @@ class EEGrunt:
             self.channels = [1,2,3,4]
             self.col_offset = -1
             self.delimiter = ','
-            self.scaling_factor = []    # Factor by which to scale EEG data after loading from file (useful for binary data)
+            self.scaling_to_microV = []    # Factor by which to scale EEG into microV after loading from file (useful for binary data)
 
 
         elif self.source == 'openbci-ganglion' or self.source == 'openbci-ganglion-openvibe':
@@ -39,7 +39,7 @@ class EEGrunt:
             self.nchannels = 4
             self.channels = [1,2,3,4]
             self.delimiter = ','
-            self.scaling_factor = []    # Factor by which to scale EEG data after loading from file (useful for binary data)
+            self.scaling_to_microV = []    # Factor by which to scale EEG into microV after loading from file (useful for binary data)
             
         elif self.source == 'customtxt' or self.source == 'customcsv' or self.source == 'binary32':   
             self.fs_Hz = float(params["fs_Hz"])
@@ -47,7 +47,7 @@ class EEGrunt:
             self.first_col_is_time = params["first_col_is_time"]   # Boolean - specifies whether the 1st column we read in is channel 1 or a channel
             self.skiprows = params["skiprows"]
             self.delimiter = params["delimiter"]    # Only applies for reading txt files
-            self.scaling_factor = params["scaling_factor"]    # Factor by which to scale EEG data after loading from file (useful for binary data)
+            self.scaling_to_microV = params["scaling_to_microV"]    # Factor by which to scale EEG into microV after loading from file (useful for binary data)
             
             # Set up some other values based on this
             if self.first_col_is_time:
@@ -64,7 +64,7 @@ class EEGrunt:
             self.nchannels = 8
             self.channels = [1,2,3,4,5,6,7,8]
             self.delimiter = ','
-            self.scaling_factor = params["scaling_factor"] 
+            self.scaling_to_microV = params["scaling_to_microV"] 
             
         else:
             print ('Unrecognized source')
@@ -185,9 +185,9 @@ class EEGrunt:
         self.data = channel_data
         self.t_sec = np.arange(len(self.raw_data[:, 0])) /self.fs_Hz
         
-        # Be sure to scale the data (into microVolts) properly if scaling_factor is not empty
-        if self.scaling_factor:
-            self.data = self.data * self.scaling_factor     # Data should now be in microVolts
+        # Be sure to scale the data (into microVolts) properly if scaling_to_microV is not empty
+        if self.scaling_to_microV:
+            self.data = self.data * self.scaling_to_microV     # Data should now be in microVolts
         
     def downsample(self, ds):
         # Keeps the first data point and ever ds datapoints thereafter
